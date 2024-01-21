@@ -20,6 +20,7 @@ from cloudscraper import create_scraper
 
 # project wide
 import config
+from logger import logger
 
 
 def get_xpath_single(html_code: str, xpath):
@@ -61,16 +62,16 @@ def get_html(url, cookies: dict = None, ua: str = None, return_type: str = None,
                 result.encoding = encoding or result.apparent_encoding
                 return result.text
         except Exception as e:
-            print("[-]Connect retry {}/{}".format(i + 1, config_proxy.retry))
+            logger.error("Connect retry {}/{}".format(i + 1, config_proxy.retry))
             errors = str(e)
     if "getaddrinfo failed" in errors:
-        print("[-]Connect Failed! Please Check your proxy config")
+        logger.error("Connect Failed! Please Check your proxy config")
         debug = config.getInstance().debug()
         if debug:
-            print("[-]" + errors)
+            logger.error("" + errors)
     else:
-        print("[-]" + errors)
-        print('[-]Connect Failed! Please check your Proxy or Network!')
+        logger.error("" + errors)
+        logger.error('Connect Failed! Please check your Proxy or Network!')
     raise Exception('Connect Failed')
 
 
@@ -92,10 +93,10 @@ def post_html(url: str, query: dict, headers: dict = None) -> requests.Response:
                 result = requests.post(url, data=query, headers=headers, timeout=config_proxy.timeout)
             return result
         except Exception as e:
-            print("[-]Connect retry {}/{}".format(i + 1, config_proxy.retry))
+            logger.error("Connect retry {}/{}".format(i + 1, config_proxy.retry))
             errors = str(e)
-    print("[-]Connect Failed! Please check your Proxy or Network!")
-    print("[-]" + errors)
+    logger.error("Connect Failed! Please check your Proxy or Network!")
+    logger.error("" + errors)
 
 
 G_DEFAULT_TIMEOUT = 10  # seconds
@@ -149,11 +150,11 @@ def get_html_session(url: str = None, cookies: dict = None, ua: str = None, retu
             result.encoding = encoding or "utf-8"
             return result.text
     except requests.exceptions.ProxyError:
-        print("[-]get_html_session() Proxy error! Please check your Proxy")
+        logger.error("get_html_session() Proxy error! Please check your Proxy")
     except requests.exceptions.RequestException:
         pass
     except Exception as e:
-        print(f"[-]get_html_session() failed. {e}")
+        logger.error(f"]get_html_session() failed. {e}")
     return None
 
 
@@ -189,9 +190,9 @@ def get_html_by_browser(url: str = None, cookies: dict = None, ua: str = None, r
             result.encoding = encoding or "utf-8"
             return result.text
     except requests.exceptions.ProxyError:
-        print("[-]get_html_by_browser() Proxy error! Please check your Proxy")
+        logger.error("get_html_by_browser() Proxy error! Please check your Proxy")
     except Exception as e:
-        print(f'[-]get_html_by_browser() Failed! {e}')
+        logger.error(f'get_html_by_browser() Failed! {e}')
     return None
 
 
@@ -229,9 +230,9 @@ def get_html_by_form(url, form_select: str = None, fields: dict = None, cookies:
             result.encoding = encoding or "utf-8"
             return response.text
     except requests.exceptions.ProxyError:
-        print("[-]get_html_by_form() Proxy error! Please check your Proxy")
+        logger.error("get_html_by_form() Proxy error! Please check your Proxy")
     except Exception as e:
-        print(f'[-]get_html_by_form() Failed! {e}')
+        logger.error(f'get_html_by_form() Failed! {e}')
     return None
 
 
@@ -265,9 +266,9 @@ def get_html_by_scraper(url: str = None, cookies: dict = None, ua: str = None, r
             result.encoding = encoding or "utf-8"
             return result.text
     except requests.exceptions.ProxyError:
-        print("[-]get_html_by_scraper() Proxy error! Please check your Proxy")
+        logger.error("get_html_by_scraper() Proxy error! Please check your Proxy")
     except Exception as e:
-        print(f"[-]get_html_by_scraper() failed. {e}")
+        logger.error(f"]get_html_by_scraper() failed. {e}")
     return None
 
 
@@ -292,9 +293,9 @@ def get_html_by_scraper(url: str = None, cookies: dict = None, ua: str = None, r
 #                     "http://www.javlibrary.com/"
 #                 )
 #         except requests.exceptions.ProxyError:
-#             print("[-] ProxyError, retry {}/{}".format(i + 1, retry_count))
+#             logger.error(" ProxyError, retry {}/{}".format(i + 1, retry_count))
 #         except cloudscraper.exceptions.CloudflareIUAMError:
-#             print("[-] IUAMError, retry {}/{}".format(i + 1, retry_count))
+#             logger.error(" IUAMError, retry {}/{}".format(i + 1, retry_count))
 #
 #     return raw_cookie, user_agent
 
@@ -325,7 +326,7 @@ def translate(
         )
         result = get_html(url=url, return_type="object")
         if not result.ok:
-            print('[-]Google-free translate web API calling failed.')
+            logger.error('Google-free translate web API calling failed.')
             return ''
 
         translate_list = [i["trans"] for i in result.json()["sentences"]]
@@ -440,11 +441,11 @@ def download_file_with_filename(url: str, filename: str, path: str) -> None:
                     try:
                         os.makedirs(path)
                     except:
-                        print(f"[-]Fatal error! Can not make folder '{path}'")
+                        logger.error(f"]Fatal error! Can not make folder '{path}'")
                         os._exit(0)
                 r = get_html(url=url, return_type='content')
                 if r == '':
-                    print('[-]Movie Download Data not found!')
+                    logger.error('Movie Download Data not found!')
                     return
                 with open(os.path.join(path, filename), "wb") as code:
                     code.write(r)
@@ -454,31 +455,31 @@ def download_file_with_filename(url: str, filename: str, path: str) -> None:
                     try:
                         os.makedirs(path)
                     except:
-                        print(f"[-]Fatal error! Can not make folder '{path}'")
+                        logger.error(f"]Fatal error! Can not make folder '{path}'")
                         os._exit(0)
                 r = get_html(url=url, return_type='content')
                 if r == '':
-                    print('[-]Movie Download Data not found!')
+                    logger.error('Movie Download Data not found!')
                     return
                 with open(os.path.join(path, filename), "wb") as code:
                     code.write(r)
                 return
         except requests.exceptions.ProxyError:
             i += 1
-            print('[-]Download :  Connect retry ' + str(i) + '/' + str(config_proxy.retry))
+            logger.error('Download :  Connect retry ' + str(i) + '/' + str(config_proxy.retry))
         except requests.exceptions.ConnectTimeout:
             i += 1
-            print('[-]Download :  Connect retry ' + str(i) + '/' + str(config_proxy.retry))
+            logger.error('Download :  Connect retry ' + str(i) + '/' + str(config_proxy.retry))
         except requests.exceptions.ConnectionError:
             i += 1
-            print('[-]Download :  Connect retry ' + str(i) + '/' + str(config_proxy.retry))
+            logger.error('Download :  Connect retry ' + str(i) + '/' + str(config_proxy.retry))
         except requests.exceptions.RequestException:
             i += 1
-            print('[-]Download :  Connect retry ' + str(i) + '/' + str(config_proxy.retry))
+            logger.error('Download :  Connect retry ' + str(i) + '/' + str(config_proxy.retry))
         except IOError:
             raise ValueError(f"[-]Create Directory '{path}' failed!")
             return
-    print('[-]Connect Failed! Please check your Proxy or Network!')
+    logger.error('Connect Failed! Please check your Proxy or Network!')
     raise ValueError('[-]Connect Failed! Please check your Proxy or Network!')
     return
 

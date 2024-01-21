@@ -12,6 +12,7 @@ from ADC_function import *
 from scraper import get_data_from_json
 from number_parser import is_uncensored
 from ImageProcessing import cutImage
+from logger import logger
 
 
 # from WebCrawler import get_data_from_json
@@ -31,23 +32,23 @@ def moveFailedFolder(filepath):
     # 原先的创建软连接到失败目录，并不直观，不方便找到失败文件位置，不如直接记录该文件路径
     if conf.main_mode() == 3 or link_mode:
         ftxt = os.path.abspath(os.path.join(failed_folder, 'failed_list.txt'))
-        print("[-]Add to Failed List file, see '%s'" % ftxt)
+        logger.error("Add to Failed List file, see '%s'" % ftxt)
         with open(ftxt, 'a', encoding='utf-8') as flt:
             flt.write(f'{filepath}\n')
     elif conf.failed_move() and not link_mode:
         failed_name = os.path.join(failed_folder, os.path.basename(filepath))
         mtxt = os.path.abspath(os.path.join(failed_folder, 'where_was_i_before_being_moved.txt'))
-        print("'[-]Move to Failed output folder, see '%s'" % mtxt)
+        logger.error("Move to Failed output folder, see '%s'" % mtxt)
         with open(mtxt, 'a', encoding='utf-8') as wwibbmt:
             tmstr = datetime.now().strftime("%Y-%m-%d %H:%M")
             wwibbmt.write(f'{tmstr} FROM[{filepath}]TO[{failed_name}]\n')
         try:
             if os.path.exists(failed_name):
-                print('[-]File Exists while moving to FailedFolder')
+                logger.error('File Exists while moving to FailedFolder')
                 return
             shutil.move(filepath, failed_name)
         except:
-            print('[-]File Moving to FailedFolder unsuccessful!')
+            logger.error('File Moving to FailedFolder unsuccessful!')
 
 
 def get_info(json_data):  # 返回json里的数据
@@ -76,7 +77,7 @@ def small_cover_check(path, filename, cover_small, movie_path, json_headers=None
         download_file_with_filename(cover_small, filename, path, movie_path, json_headers['headers'])
     else:
         download_file_with_filename(cover_small, filename, path, movie_path)
-    print('[+]Image Downloaded! ' + full_filepath.name)
+    logger.success('Image Downloaded! ' + full_filepath.name)
 
 
 def create_folder(json_data):  # 创建文件夹
@@ -105,7 +106,7 @@ def create_folder(json_data):  # 创建文件夹
             try:
                 os.makedirs(path)
             except:
-                print(f"[-]Fatal error! Can not make folder '{path}'")
+                logger.error(f"Fatal error! Can not make folder '{path}'")
                 os._exit(0)
 
     return os.path.normpath(path)
@@ -115,6 +116,7 @@ def create_folder(json_data):  # 创建文件夹
 
 # path = examle:photo , video.in the Project Folder!
 def download_file_with_filename(url, filename, path, filepath, json_headers=None):
+    logger.debug('Image Download Start, Url: ' + str(url))
     conf = config.getInstance()
     configProxy = conf.proxy()
 
@@ -124,25 +126,25 @@ def download_file_with_filename(url, filename, path, filepath, json_headers=None
                 try:
                     os.makedirs(path)
                 except:
-                    print(f"[-]Fatal error! Can not make folder '{path}'")
+                    logger.error(f"Fatal error! Can not make folder '{path}'")
                     os._exit(0)
             r = get_html(url=url, return_type='content', json_headers=json_headers)
             if r == '':
-                print('[-]Movie Download Data not found!')
+                logger.error('Movie Download Data not found!')
                 return
             with open(os.path.join(path, filename), "wb") as code:
                 code.write(r)
             return
         except requests.exceptions.ProxyError:
             i += 1
-            print('[-]Image Download : Proxy error ' + str(i) + '/' + str(configProxy.retry))
+            logger.error('Image Download : Proxy error ' + str(i) + '/' + str(configProxy.retry))
         # except IOError:
-        #     print(f"[-]Create Directory '{path}' failed!")
+        #     logger.error(f"Create Directory '{path}' failed!")
         #     moveFailedFolder(filepath)
         #     return
         except Exception as e:
-            print('[-]Image Download :Error', e)
-    print('[-]Connect Failed! Please check your Proxy or Network!')
+            logger.error('Image Download :Error', e)
+    logger.error('Connect Failed! Please check your Proxy or Network!')
     moveFailedFolder(filepath)
     return
 
@@ -162,7 +164,7 @@ def trailer_download(trailer, leak_word, c_word, hack_word, number, path, filepa
             break
     if file_not_exist_or_empty(path + '/' + number + leak_word + c_word + hack_word + '-trailer.mp4'):
         return
-    print('[+]Video Downloaded!', path + '/' + number + leak_word + c_word + hack_word + '-trailer.mp4')
+    logger.success('Video Downloaded!', path + '/' + number + leak_word + c_word + hack_word + '-trailer.mp4')
 
 
 def actor_photo_download(actors, save_dir, number):
@@ -194,12 +196,12 @@ def actor_photo_download(actors, save_dir, number):
     for i, r in enumerate(result):
         if not r:
             failed += 1
-            print(f"[-]Actor photo '{dn_list[i][0]}' to '{dn_list[i][1]}' download failed!")
+            logger.error(f"Actor photo '{dn_list[i][0]}' to '{dn_list[i][1]}' download failed!")
     if failed:  # 非致命错误，电影不移入失败文件夹，将来可以用模式3补齐
-        print(
-            f"[-]Failed downloaded {failed}/{len(result)} actor photo for [{number}] to '{actors_dir}', you may retry run mode 3 later.")
+        logger.error(
+            f"Failed downloaded {failed}/{len(result)} actor photo for [{number}] to '{actors_dir}', you may retry run mode 3 later.")
     else:
-        print(f"[+]Successfully downloaded {len(result)} actor photo.")
+        logger.success(f"Successfully downloaded {len(result)} actor photo.")
 
 
 # 剧照下载成功，否则移动到failed
@@ -233,7 +235,7 @@ def extrafanart_download_one_by_one(data, path, filepath, json_data=None):
                 break
         if file_not_exist_or_empty(jpg_fullpath):
             return
-        print('[+]Image Downloaded!', Path(jpg_fullpath).name)
+        logger.success('Image Downloaded!', Path(jpg_fullpath).name)
         j += 1
     if conf.debug():
         print(f'[!]Extrafanart download one by one mode runtime {time.perf_counter() - tm_start:.3f}s')
@@ -260,12 +262,12 @@ def extrafanart_download_threadpool(url_list, save_dir, number, json_data=None):
     for i, r in enumerate(result, start=1):
         if not r:
             failed += 1
-            print(f'[-]Extrafanart {i} for [{number}] download failed!')
+            logger.error(f'Extrafanart {i} for [{number}] download failed!')
     if failed:  # 非致命错误，电影不移入失败文件夹，将来可以用模式3补齐
         print(
             f"[-]Failed downloaded {failed}/{len(result)} extrafanart images for [{number}] to '{extrafanart_dir}', you may retry run mode 3 later.")
     else:
-        print(f"[+]Successfully downloaded {len(result)} extrafanarts.")
+        logger.success(f"Successfully downloaded {len(result)} extrafanarts.")
     if conf.debug():
         print(f'[!]Extrafanart download ThreadPool mode runtime {time.perf_counter() - tm_start:.3f}s')
 
@@ -307,7 +309,7 @@ def image_download(cover, fanart_path, thumb_path, path, filepath, json_headers=
             break
     if file_not_exist_or_empty(full_filepath):
         return
-    print('[+]Image Downloaded!', Path(full_filepath).name)
+    logger.debug('Image Downloaded! ' + full_filepath)
     if not config.getInstance().jellyfin():
         shutil.copyfile(full_filepath, os.path.join(path, fanart_path))
 
@@ -325,7 +327,7 @@ def print_files(path, leak_word, c_word, naming_rule, part, cn_sub, json_data, f
             try:
                 os.makedirs(path)
             except:
-                print(f"[-]Fatal error! can not make folder '{path}'")
+                logger.error(f"Fatal error! can not make folder '{path}'")
                 os._exit(0)
 
         old_nfo = None
@@ -470,15 +472,13 @@ def print_files(path, leak_word, c_word, naming_rule, part, cn_sub, json_data, f
                 print("  <trailer>" + trailer + "</trailer>", file=code)
             print("  <website>" + website + "</website>", file=code)
             print("</movie>", file=code)
-            print("[+]Wrote!            " + nfo_path)
+            logger.success("Wrote", nfo_path)
     except IOError as e:
-        print("[-]Write Failed!")
-        print("[-]", e)
+        logger.error("Write Failed!", e)
         moveFailedFolder(filepath)
         return
     except Exception as e1:
-        print("[-]Write Failed!")
-        print("[-]", e1)
+        logger.error("Write Failed!", e1)
         moveFailedFolder(filepath)
         return
 
@@ -511,7 +511,7 @@ def add_mark(poster_path, thumb_path, cn_sub, leak, uncensored, hack, _4k, iso) 
         return
     add_mark_thread(thumb_path, cn_sub, leak, uncensored, hack, _4k, iso)
     add_mark_thread(poster_path, cn_sub, leak, uncensored, hack, _4k, iso)
-    print('[+]Add Mark:         ' + mark_type.strip(','))
+    logger.success('Add Mark:         ' + mark_type.strip(','))
 
 
 def add_mark_thread(pic_path, cn_sub, leak, uncensored, hack, _4k, iso):
@@ -556,7 +556,7 @@ def add_to_pic(pic_path, img_pic, size, count, mode):
     elif mode == 6:
         pngpath = "Img/ISO.png"
     else:
-        print('[-]Error: watermark image param mode invalid!')
+        logger.error('Error: watermark image param mode invalid!')
         return
     # 先找pyinstaller打包的图片
     if hasattr(sys, '_MEIPASS') and os.path.isfile(os.path.join(getattr(sys, '_MEIPASS'), pngpath)):
@@ -620,14 +620,14 @@ def paste_file_to_folder(filepath, path, multi_part, number, part, leak_word, c_
         return
 
     except FileExistsError as fee:
-        print(f'[-]FileExistsError: {fee}')
+        logger.error(f'FileExistsError: {fee}')
         moveFailedFolder(filepath)
         return
     except PermissionError:
-        print('[-]Error! Please run as administrator!')
+        logger.error('Error! Please run as administrator!')
         return
     except OSError as oserr:
-        print(f'[-]OS Error errno {oserr.errno}')
+        logger.error(f'OS Error errno {oserr.errno}')
         return
 
 
@@ -660,11 +660,11 @@ def paste_file_to_folder_mode2(filepath, path, multi_part, number, part, leak_wo
                 os.symlink(str(filepath_obj.resolve()), targetpath)
         print("[!]Link =>          ", path)
     except FileExistsError as fee:
-        print(f'[-]FileExistsError: {fee}')
+        logger.error(f'FileExistsError: {fee}')
     except PermissionError:
-        print('[-]Error! Please run as administrator!')
+        logger.error('Error! Please run as administrator!')
     except OSError as oserr:
-        print(f'[-]OS Error errno  {oserr.errno}')
+        logger.error(f'OS Error errno  {oserr.errno}')
 
 
 def linkImage(path, number, part, leak_word, c_word, hack_word, ext):
@@ -703,19 +703,19 @@ def linkImage(path, number, part, leak_word, c_word, hack_word, ext):
 
 def debug_print(data: json):
     try:
-        print("[+] ------- DEBUG INFO -------")
+        logger.debug("------- DEBUG INFO -------")
         for i, v in data.items():
             if i == 'outline':
-                print('[+]  -', "%-19s" % i, ':', len(v), 'characters')
+                logger.success('  -', "%-19s" % i, ':', len(v), 'characters')
                 continue
             if i == 'actor_photo' or i == 'year':
                 continue
             if i == 'extrafanart':
-                print('[+]  -', "%-19s" % i, ':', len(v), 'links')
+                logger.success('  -', "%-19s" % i, ':', len(v), 'links')
                 continue
-            print(f'[+]  - {i:<{cn_space(i, 19)}} : {v}')
+            logger.debug(f'{i:<{cn_space(i, 19)}} : {v}')
 
-        print("[+] ------- DEBUG INFO -------")
+        logger.debug("------- DEBUG INFO -------")
     except:
         pass
 
@@ -814,11 +814,11 @@ def move_subtitles(filepath, path, multi_part, number, part, leak_word, c_word, 
             sub_targetpath = Path(path) / f"{number}{leak_word}{c_word}{hack_word}{''.join(subfile.suffixes)}"
             if link_mode not in (1, 2):
                 shutil.move(str(subfile), str(sub_targetpath))
-                print(f"[+]Sub Moved!        {sub_targetpath.name}")
+                logger.success(f"Sub Moved!        {sub_targetpath.name}")
                 result = True
             else:
                 shutil.copyfile(str(subfile), str(sub_targetpath))
-                print(f"[+]Sub Copied!       {sub_targetpath.name}")
+                logger.success(f"Sub Copied!       {sub_targetpath.name}")
                 result = True
             if result:
                 break
@@ -940,6 +940,7 @@ def core_main(movie_path, number_th, oCC, specified_source=None, specified_url=N
 
         # creatFolder会返回番号路径
         if 'headers' in json_data:
+            logger.debug()
             image_download(cover, fanart_path, thumb_path, path, movie_path, json_data)
         else:
             image_download(cover, fanart_path, thumb_path, path, movie_path)

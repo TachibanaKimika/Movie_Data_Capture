@@ -3,6 +3,7 @@ import re
 import sys
 import config
 import typing
+from logger import logger
 
 G_spat = re.compile(
     "^\w+\.(cc|com|net|me|club|jp|tv|xyz|biz|wiki|info|tw|us|de)@|^22-sht\.me|"
@@ -47,7 +48,7 @@ def get_number(debug: bool, file_path: str) -> str:
                     if re.search(regex, filepath):
                         return re.search(regex, filepath).group()
                 except Exception as e:
-                    print(f'[-]custom regex exception: {e} [{regex}]')
+                    logger.error(f'custom regex exception: {e} [{regex}]')
 
         file_number = get_number_by_dict(filepath)
         if file_number:
@@ -91,7 +92,7 @@ def get_number(debug: bool, file_path: str) -> str:
                 return str(re.search(r'(.+?)\.', filepath)[0])
     except Exception as e:
         if debug:
-            print(f'[-]Number Parser exception: {e} [{file_path}]')
+            logger.error(f'Number Parser exception: {e} [{file_path}]')
         return None
         
 
@@ -245,7 +246,7 @@ if __name__ == "__main__":
             out_text = out_bytes.decode('utf-8')
             out_list = [os.path.basename(line) for line in out_text.splitlines()]
         else:
-            print('[-]Unsupported platform! Please run on OS Windows/Linux/MacOSX. Exit.')
+            logger.error('Unsupported platform! Please run on OS Windows/Linux/MacOSX. Exit.')
             sys.exit(1)
     else:  # Windows single disk
         if sys.platform != "win32":
@@ -264,16 +265,16 @@ if __name__ == "__main__":
         out_bytes = subprocess.check_output(ES_cmdline.split(' '))
         out_text = out_bytes.decode('gb18030')  # 中文版windows 10 x64默认输出GB18030，此编码为UNICODE方言与UTF-8系全射关系无转码损失
         out_list = out_text.splitlines()
-    print(f'\n[!]{ES_prog_path} is searching {ES_search_path} for movies as number parser test cases...')
-    print(f'[+]Find {len(out_list)} Movies.')
+    logger.info(f'\n{ES_prog_path} is searching {ES_search_path} for movies as number parser test cases...')
+    logger.success(f'Find {len(out_list)} Movies.')
     for filename in out_list:
         try:
             n = get_number(True, filename)
             if n:
                 print('  [{0}] {2}# {1}'.format(n, filename, '#无码' if is_uncensored(n) else ''))
             else:
-                print(f'[-]Number return None. # {filename}')
+                logger.error(f'Number return None. # {filename}')
         except Exception as e:
-            print(f'[-]Number Parser exception: {e} [{filename}]')
+            logger.error(f'Number Parser exception: {e} [{filename}]')
 
     sys.exit(0)

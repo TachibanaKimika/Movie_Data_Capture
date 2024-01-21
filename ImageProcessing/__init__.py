@@ -10,6 +10,8 @@ from PIL import Image
 import shutil
 from ADC_function import file_not_exist_or_empty
 
+from logger import logger
+
 
 def face_crop_width(filename, width, height):
     aspect_ratio = config.getInstance().face_aspect_ratio()
@@ -90,13 +92,13 @@ def cutImage(imagecut, path, thumb_path, poster_path, skip_facerec=False):
             else:  # 如果等于2/3
                 img2 = img
             img2.save(fullpath_poster)
-            print(f"[+]Image Cutted!     {Path(fullpath_poster).name}")
+            logger.success(f"Image Cutted!     {Path(fullpath_poster).name}")
         except Exception as e:
             print(e)
             print('[-]Cover cut failed!')
     elif imagecut == 0:  # 复制封面
         shutil.copyfile(fullpath_fanart, fullpath_poster)
-        print(f"[+]Image Copyed!     {Path(fullpath_poster).name}")
+        logger.success(f"Image Copyed!     {Path(fullpath_poster).name}")
 
 
 def face_center(filename, model):

@@ -5,6 +5,7 @@ import configparser
 import time
 import typing
 from pathlib import Path
+from logger import logger
 
 G_conf_override = {
     # index 0 save Config() first instance for quick access by using getInstance()
@@ -109,7 +110,7 @@ class Config:
         a则因为二义性，不是合法的省略键名
         """
         def err_exit(str):
-            print(str)
+            logger.error(str)
             os._exit(2)
 
         sections = self.conf.sections()
@@ -435,7 +436,7 @@ class Config:
 
     @staticmethod
     def _exit(sec: str) -> None:
-        print("[-] Read config error! Please check the {} section in config.ini", sec)
+        logger.error("Read config error! Please check the {} section in config.ini", sec)
         input("[-] Press ENTER key to exit.")
         exit()
 

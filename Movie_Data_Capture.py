@@ -22,6 +22,8 @@ from ADC_function import file_modification_days, get_html, parallel_download_fil
 from number_parser import get_number
 from core import core_main, core_main_no_net_op, moveFailedFolder, debug_print
 
+from logger import logger
+
 
 def check_update(local_version):
     htmlcode = get_html("https://api.github.com/repos/yoshiko2/Movie_Data_Capture/releases/latest")
@@ -29,10 +31,10 @@ def check_update(local_version):
     remote = int(data["tag_name"].replace(".", ""))
     local_version = int(local_version.replace(".", ""))
     if local_version < remote:
-        print("[*]" + ("* New update " + str(data["tag_name"]) + " *").center(54))
-        print("[*]" + "↓ Download ↓".center(54))
-        print("[*]https://github.com/yoshiko2/Movie_Data_Capture/releases")
-        print("[*]======================================================")
+        logger.debug("" + ("* New update " + str(data["tag_name"]) + " *").center(54))
+        logger.debug("" + "↓ Download ↓".center(54))
+        logger.debug("https://github.com/yoshiko2/Movie_Data_Capture/releases")
+        logger.debug("======================================================")
 
 
 def argparse_function(ver: str) -> typing.Tuple[str, str, str, str, bool, bool, str, str]:
@@ -439,7 +441,7 @@ def rm_empty_folder(path):
             if not any(files) and not still_has_subdirs and not os.path.samefile(path, current_dir):
                 os.rmdir(current_dir)
                 deleted.add(current_dir)
-                print('[+]Deleting empty folder', current_dir)
+                logger.success('Deleting empty folder', current_dir)
         except:
             pass
 
@@ -462,7 +464,7 @@ def create_data_and_move(movie_path: str, zero_op: bool, no_net_op: bool, oCC):
         else:
             print("[-] number empty ERROR")
             moveFailedFolder(movie_path)
-        print("[*]======================================================")
+        logger.debug("======================================================")
     else:
         try:
             print(f"[!] [{n_number}] As Number Processing for '{movie_path}'")
@@ -475,7 +477,7 @@ def create_data_and_move(movie_path: str, zero_op: bool, no_net_op: bool, oCC):
                     core_main(movie_path, n_number, oCC)
             else:
                 raise ValueError("number empty")
-            print("[*]======================================================")
+            logger.debug("======================================================")
         except Exception as err:
             print(f"[-] [{movie_path}] ERROR:")
             print('[-]', err)
@@ -495,7 +497,7 @@ def create_data_and_move_with_custom_number(file_path: str, custom_number, oCC, 
             core_main(file_path, custom_number, oCC, specified_source, specified_url)
         else:
             print("[-] number empty ERROR")
-        print("[*]======================================================")
+        logger.debug("======================================================")
     except Exception as err:
         print("[-] [{}] ERROR:".format(file_path))
         print('[-]', err)
@@ -529,27 +531,27 @@ def main(args: tuple) -> Path:
     dupe_stdout_to_logfile(logdir)
 
     platform_total = str(
-        ' - ' + platform.platform() + ' \n[*] - ' + platform.machine() + ' - Python-' + platform.python_version())
+        ' - ' + platform.platform() + ' ' + platform.machine() + ' - Python-' + platform.python_version())
 
-    print('[*]================= Movie Data Capture =================')
-    print('[*]' + version.center(54))
-    print('[*]======================================================')
-    print('[*]' + platform_total)
-    print('[*]======================================================')
-    print('[*] - 严禁在墙内宣传本项目 - ')
-    print('[*]======================================================')
+    logger.debug('================= Movie Data Capture =================')
+    logger.debug('' + version.center(54))
+    logger.debug('======================================================')
+    logger.debug('' + platform_total)
+    logger.debug('======================================================')
+    logger.debug(' - 严禁在墙内宣传本项目 - ')
+    logger.debug('======================================================')
 
     start_time = time.time()
-    print('[+]Start at', time.strftime("%Y-%m-%d %H:%M:%S"))
+    logger.success('Start at', time.strftime("%Y-%m-%d %H:%M:%S"))
 
-    print(f"[+]Load Config file '{conf.ini_path}'.")
+    logger.success(f"Load Config file '{conf.ini_path}'.")
     if conf.debug():
-        print('[+]Enable debug')
+        logger.success('Enable debug')
     if conf.link_mode() in (1, 2):
         print('[!]Enable {} link'.format(('soft', 'hard')[conf.link_mode() - 1]))
     if len(sys.argv) > 1:
         print('[!]CmdLine:', " ".join(sys.argv[1:]))
-    print('[+]Main Working mode ## {}: {} ## {}{}{}'
+    logger.success('Main Working mode ## {}: {} ## {}{}{}'
           .format(*(main_mode, ['Scraping', 'Organizing', 'Scraping in analysis folder'][main_mode - 1],
                     "" if not conf.multi_threading() else ", multi_threading on",
                     "" if conf.nfo_skip_days() == 0 else f", nfo_skip_days={conf.nfo_skip_days()}",
@@ -569,12 +571,12 @@ def main(args: tuple) -> Path:
             for k, v in map_tab:
                 if v.exists():
                     if file_modification_days(str(v)) >= conf.mapping_table_validity():
-                        print("[+]Mapping Table Out of date! Remove", str(v))
+                        logger.success("Mapping Table Out of date! Remove", str(v))
                         os.remove(str(v))
             res = parallel_download_files(((k, v) for k, v in map_tab if not v.exists()))
             for i, fp in enumerate(res, start=1):
                 if fp and len(fp):
-                    print(f"[+] [{i}/{len(res)}] Mapping Table Downloaded to {fp}")
+                    logger.success(f" [{i}/{len(res)}] Mapping Table Downloaded to {fp}")
                 else:
                     print(f"[-] [{i}/{len(res)}] Mapping Table Download failed")
         except:
@@ -609,7 +611,7 @@ def main(args: tuple) -> Path:
         os._exit(0)
 
     if not single_file_path == '':  # Single File
-        print('[+]==================== Single File =====================')
+        logger.success('==================== Single File =====================')
         if custom_number == '':
             create_data_and_move_with_custom_number(single_file_path,
                                                     get_number(conf.debug(), os.path.basename(single_file_path)), oCC,
@@ -626,8 +628,8 @@ def main(args: tuple) -> Path:
 
         count = 0
         count_all = str(len(movie_list))
-        print('[+]Find', count_all, 'movies.')
-        print('[*]======================================================')
+        logger.success('Find', count_all, 'movies.')
+        logger.debug('======================================================')
         stop_count = conf.stop_counter()
         if stop_count < 1:
             stop_count = 999999
@@ -654,10 +656,10 @@ def main(args: tuple) -> Path:
 
     end_time = time.time()
     total_time = str(timedelta(seconds=end_time - start_time))
-    print("[+]Running time", total_time[:len(total_time) if total_time.rfind('.') < 0 else -3],
+    logger.success("Running time", total_time[:len(total_time) if total_time.rfind('.') < 0 else -3],
           " End at", time.strftime("%Y-%m-%d %H:%M:%S"))
 
-    print("[+]All finished!!!")
+    logger.success("All finished!!!")
 
     return close_logfile(logdir)
 

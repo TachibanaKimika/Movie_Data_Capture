@@ -112,3 +112,8 @@ failed/*
 .vscode/launch.json
 
 .idea
+
+# venv
+/Scripts
+/Lib
+pyvenv.cfg
